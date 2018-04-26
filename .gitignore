@@ -1,0 +1,7 @@
+*~
+*.m~
+*.DS_Store
+*.zip
+*socmodel/*
+*.mat
+
