@@ -13,8 +13,8 @@ for p=1:length(files)
     fprintf('Downloading %s (please be patient).\n',files{p});
     urlwrite(source{p},files{p});
     fprintf('Downloading is done!\n');
-    [~, ext] = fileparts(files{p});
-    if strcmp(ext, 'zip'), unzip(files{p});  end
+    [~, fname, ext] = fileparts(files{p});
+    if strcmp(ext, '.zip'), unzip(files{p}, fname);  end
   end
 end
 clear p files;
