@@ -48,24 +48,17 @@ stimulus = reshape(stimulus,100*100,69)';
 % the parameters of the Linear Elliptical model are [R C SR G SC] where
 %   R is the row index of the center of the 2D Gaussian
 %   C is the column index of the center of the 2D Gaussian
-%   S is the standard deviation of the 2D Gaussian in rows
+%   SR is the standard deviation of the 2D Gaussian in rows
 %   G is a gain parameter
-%   SR is ration of the standard deviations of the 2D Gaussian in the
-%           columns to rows
-
-% define constants
-res = 100;  % resolution of the pre-processed stimuli
+%   SC is the standard deviation of the 2D Gaussian in the columns
 
 % define the initial seed for the model parameters
-seed = [(1+res)/2 (1+res)/2 res 1 1];
+seed = [(1+res)/2 (1+res)/2 res 1 res];
 
 % define bounds for the model parameters
 bounds = [1-res+1 1-res+1 0   -Inf 0;
           2*res-1 2*res-1 Inf  Inf Inf];
 
-boundsFIX = bounds;
-boundsFIX(1,5) = NaN;
-      
 % issue a dummy call to makegaussian2d.m to pre-compute xx and yy.
 % these variables are re-used to achieve faster computation.
 [d,xx,yy] = makegaussian2d(res,2,2,2,2);
@@ -76,7 +69,7 @@ boundsFIX(1,5) = NaN;
 % stimuli (as a vector of size A x 1).  for compactness, we implement this 
 % function as an anonymous function where the parameters are given by pp
 % and the stimuli are given by dd.
-modelfunElliptical = @(pp,dd) pp(4)*(dd*vflatten(makegaussian2d(res,pp(1),pp(2),pp(3)/pp(5),pp(3)*pp(5),...
+modelfunElliptical = @(pp,dd) pp(4)*(dd*vflatten(makegaussian2d(res,pp(1),pp(2),pp(3),pp(5),...
     xx,yy,0,0)/(2*pi*pp(3)*pp(5))));
 
 modelfunIsotropic = @(pp,dd) pp(4)*(dd*vflatten(makegaussian2d(res,pp(1),pp(2),pp(3),pp(3),...
@@ -90,10 +83,7 @@ modelfunIsotropic = @(pp,dd) pp(4)*(dd*vflatten(makegaussian2d(res,pp(1),pp(2),p
 
 % now that we have defined modelfun, we are ready to define the final model
 % specification.  
-modelElliptical = {{seed       boundsFIX   modelfunElliptical} ...
-         {@(ss) ss   bounds      @(ss) modelfunElliptical}};
-
-     
+modelElliptical = {seed bounds modelfunElliptical};
 modelIsotropic  = {seed(1:4) bounds(:,1:4)  modelfunIsotropic};
 
 % define the resampling scheme to use.  here, we use 0, which
@@ -160,7 +150,7 @@ figure; hold on;
 pp = resultsElliptical.params;
   % draw a circle indicating the PRF location +/- 2 PRF sizes.
   
-drawellipse(pp(2),pp(1),0,2*pp(3)*pp(5),2*pp(3)/pp(5),[],[],'k-');
+drawellipse(pp(2),pp(1),0,2*pp(5),2*pp(3),[],[],'k-');
 
 pp = resultsIsotropic.params;
   % draw a circle indicating the PRF location +/- 2 PRF sizes.
@@ -239,7 +229,7 @@ resultsBOOTIsotropic = fitnonlinearmodel(optBOOT);
 figure; subplot(1,2,1); hold on;
 for p=1:size(resultsBOOTElliptical.params,1)
   pp = resultsBOOTElliptical.params(p,:);
-  h = drawellipse(pp(2),pp(1),0,2*pp(3)*pp(5),2*pp(3)/pp(5));
+  h = drawellipse(pp(2),pp(1),0,2*pp(5),2*pp(3));
   set(h,'Color',rand(1,3));
 end
 drawrectangle((1+res)/2,(1+res)/2,res,res,'k-');
