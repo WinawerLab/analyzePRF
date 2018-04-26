@@ -274,7 +274,7 @@ for r=1:res
   for c=1:res
     stim0 = zeros(res,res);
     stim0(r,c) = 1;
-    resp(r,c) = modelfunE(resultsElliptical.params,flatten(stim0));
+    resp(r,c) = modelfunElliptical(resultsElliptical.params,flatten(stim0));
   end
 end
 
@@ -290,8 +290,8 @@ title('Predicted response to point stimuli');
 
 hold on
 pp = resultsElliptical.params;
-h = drawellipse(pp(2),pp(1),0,pp(5),pp(3));
-h = drawellipse(pp(2),pp(1),0,2*pp(5),2*pp(3), [], [], '--');
+h = drawellipse(pp(2),pp(1),0,pp(3)*pp(5),pp(3)/pp(5));
+h = drawellipse(pp(2),pp(1),0,2*pp(3)*pp(5),2*pp(3)/pp(5), [], [], '--');
 
 %%
 

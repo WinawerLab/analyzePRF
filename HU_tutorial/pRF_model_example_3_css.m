@@ -2,8 +2,8 @@
 
 % specify the index of the voxel to fit
 ix = 774; % same voxel used for pRF_model_example_1_linear
-ix = 1945; % TO1
-ix = 1996; % V3AB
+%ix = 1945; % TO1
+%ix = 1996; % V3AB
 %ix = 2036; % V3AB
 
 %% Add code to the MATLAB path
