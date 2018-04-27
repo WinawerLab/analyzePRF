@@ -4,7 +4,7 @@
 % Download the dataset if it has not already been downloaded.
 % (If you like, you may manually download the dataset from:
 %    http://kendrickkay.net/analyzePRF/exampledataset.mat)
-files = {'exampledataset.mat' 'socmodel.zip'};
+files = {'exampledataset.mat' 'socmodel.zip' };
 source = {'http://kendrickkay.net/analyzePRF/exampledataset.mat' ...
     'http://kendrickkay.net/socmodel/socmodel.zip'};
 
