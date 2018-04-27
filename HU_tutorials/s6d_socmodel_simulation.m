@@ -2,7 +2,7 @@
 
 %% Add code to the MATLAB path
 
-addpath(genpath(fullfile(pwd,'code')));
+setup
 
 %% Load some stimuli
 

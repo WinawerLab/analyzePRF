@@ -7,8 +7,8 @@
 
 %% Add code to the MATLAB path
 
-addpath(genpath(fullfile(pwd,'code')));
-savepath = fileparts(which(mfilename));
+savepath = fullfile(ap_root_path, 'HU_tutorials');
+setup
 %% Load data
 
 % load data from the third dataset
