@@ -95,10 +95,9 @@ end
 stimulusEnergy = sqrt(blob(stimulusFiltered.^2,2,2));
 
 % Check an exmaple
-s = reshape(stimulusEnergy, [891 8 90 90]);
-a = squeeze(s(100,1,:,:));
 figure, imagesc(stimulus(:,:,100)); axis image; colormap gray;
-figure,  for ii = 1:8; subplot(2,4,ii); a = squeeze(s(100,ii,:,:)); imagesc(a); axis image; colormap gray; end
+s = reshape(stimulusEnergy, [891 8 90 90]);
+figure,  for ii = 1:8; subplot(4,2,ii); a = squeeze(s(100,ii,:,:)); imagesc(a); axis image off; colormap gray; end
 clear s a;
 
 %% Divisive normalization
@@ -123,7 +122,9 @@ s = 0.5;
 stimulusDivNorm = stimulusEnergy.^r ./ (s.^r + stimulusPOP.^r);
 clear stimulusPOP;
 
-% sum across orientation.  after this step, stimulus is images x positions.
+%% sum across orientation.  after this step, stimulus is images x positions.
+
+
 stimulusSummed = blob(stimulusDivNorm,2,8);
 
 % each of the 99 stimuli that we are considering actually consists of 9 frames.
