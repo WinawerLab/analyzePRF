@@ -1,26 +1,22 @@
 %% Example script illustrating how to fit the CSS model
-
-% specify the index of the voxel to fit
+%% Add code to the MATLAB path
+%%
+clear; close all; setup;
+%% specify the index of the voxel to fit
+%%
 ix = 774; % same voxel used for pRF_model_example_1_linear
-%ix = 1945; % TO1
+ix = 1945; % TO1
 %ix = 1996; % V3AB
 %ix = 2036; % V3AB
-
-%% Add code to the MATLAB path
-
-addpath(genpath(fullfile(pwd,'code')));
-
 %% Load data
-
+%%
 % load data from the first dataset
 load('dataset01.mat','betamn','betase');
-
 %% Load stimuli
-
+%%
 load('stimuli.mat','conimages');
-
 %% Perform stimulus pre-processing
-
+%%
 % extract the stimuli we need and then concatenate along the third dimension
 stimulus = conimages(1:69);
 stimulus = cat(3,stimulus{:});
@@ -44,12 +40,10 @@ colormap(gray);
 colorbar;
 title('Stimulus');
 %%
-
 % reshape stimuli into a "flattened" format: 69 stimuli x 100*100 positions
 stimulus = reshape(stimulus,100*100,69)';
-
 %% Prepare for model fitting
-
+%%
 % to perform model fitting, we will be using fitnonlinearmodel.m.  this function
 % is essentially a wrapper around MATLAB's lsqcurvefit.m function.  the benefit
 % of fitnonlinearmodel.m is that it simplifies input and output issues, deals with
@@ -147,29 +141,26 @@ optLinear = struct( ...
 
 % do a quick inspection of opt
 optCSS
-%%
-
+%% 
+% 
 %% Fit the model
-
+%%
 resultsCSS    = fitnonlinearmodel(optCSS);
 resultsLinear = fitnonlinearmodel(optLinear);
-%%
-
+%% 
+% 
 %% Inspect the results
-
+%%
 % these are the final parameter estimates
 resultsCSS.params
 resultsLinear.params
 %%
-
 % this is the R^2 between the model fit and the data
 resultsCSS.trainperformance
 
 % compare to the linear model fit
 resultsLinear.trainperformance
-
 %%
-
 % visualize the parameter estimates
 figure; hold on;
 pp = resultsCSS.params;
@@ -177,6 +168,7 @@ pp = resultsCSS.params;
   % PRF size is defined as S/sqrt(N).
 drawellipse(pp(2),pp(1),0,2*pp(3)/sqrt(pp(5)),2*pp(3)/sqrt(pp(5)),[],[],'k');
 drawrectangle((1+res)/2,(1+res)/2,res,res,'k-');
+plot([.5 res+.5], (res+1)/2*[1 1], 'k--', (res+1)/2*[1 1], [.5 res+.5] , 'k--')
 axis([.5 res+.5 .5 res+.5]);
 set(gca,'YDir','reverse');
 axis square;
@@ -186,14 +178,7 @@ pp = resultsLinear.params;
   % draw a circle indicating the PRF location +/- 2 PRF sizes.
   % PRF size is defined as S/sqrt(N).
 drawellipse(pp(2),pp(1),0,2*pp(3),2*pp(3),[],[],'r');
-
-
-
-
-
-
 %%
-
 % visualize the data and the model fit
 figure; setfigurepos([100 100 450 250]); hold on;
 bar(betamn(ix,:),1);
@@ -208,27 +193,10 @@ title('Data and model fit');
 
 modelfitLinear = modelfunLinear(resultsLinear.params,stimulus);
 plot(1:69,modelfitLinear,'r-','LineWidth',2);
-%%
-
-%% Try a different resampling scheme: cross-validation
-
-% define an options struct that specifies leave-one-out cross-validation
-optXVAL = optCSS;
-optXVAL.resampling = -2*(eye(69) - 0.5);
-optXVAL.optimoptions = {'Display' 'off'};  % turn off reporting
-
-% fit the model
-resultsXVALCSS = fitnonlinearmodel(optXVAL);
-%%
-
-% this is the R^2 between the model predictions and the data.
-% notice that this cross-validated R^2 is lower than the
-% R^2 of the full fit obtained previously.
-resultsXVALCSS.aggregatedtestperformance
-%%
-
+%% 
+% 
 %% Try a different resampling scheme: bootstrapping
-
+%%
 % define an options struct that specifies 25 bootstraps (i.e. draw 
 % with replacement from the 69 data points5
 optBOOT = optCSS;
@@ -244,9 +212,7 @@ optBOOT.optimoptions = {'Display' 'off'};  % turn off reporting
 
 % fit the model
 resultsBOOTLinear = fitnonlinearmodel(optBOOT);
-
 %%
-
 % visualize the parameter estimates
 figure; hold on;
 subplot(1,2,1)
@@ -255,6 +221,7 @@ for p=1:size(resultsBOOTCSS.params,1)
   h = drawellipse(pp(2),pp(1),0,2*pp(3)/sqrt(pp(5)),2*pp(3)/sqrt(pp(5)));
   set(h,'Color',rand(1,3));
 end
+plot([.5 res+.5], (res+1)/2*[1 1], 'k--', (res+1)/2*[1 1], [.5 res+.5] , 'k--')
 drawrectangle((1+res)/2,(1+res)/2,res,res,'k-');
 axis([.5 res+.5 .5 res+.5]);
 set(gca,'YDir','reverse');
@@ -268,16 +235,16 @@ for p=1:size(resultsBOOTLinear.params,1)
   h = drawellipse(pp(2),pp(1),0,2*pp(3),2*pp(3));
   set(h,'Color',rand(1,3));
 end
+plot([.5 res+.5], (res+1)/2*[1 1], 'k--', (res+1)/2*[1 1], [.5 res+.5] , 'k--')
 drawrectangle((1+res)/2,(1+res)/2,res,res,'k-');
 axis([.5 res+.5 .5 res+.5]);
 set(gca,'YDir','reverse');
 axis square;
 title('Bootstrap Linear');
-
-%%
-
+%% 
+% 
 %% Example of how to simulate model responses
-
+%%
 % let's take the model fitted to the full dataset and compute
 % the predicted response of the model to some new stimuli.
 
@@ -299,13 +266,18 @@ imagesc(resp,[0 mx]);
 axis image tight;
 colormap(gray);
 title('Predicted response to point stimuli');
-%%
-
-% notice that the results are consistent with the definition
-% of PRF size as S/sqrt(N).
 pp = resultsCSS.params;
-h = drawellipse(pp(2),pp(1),0,pp(3),pp(3), [], [], 'k--');
-h = drawellipse(pp(2),pp(1),0,2*pp(3),2*pp(3), [], [], 'k--');
-
-h = drawellipse(pp(2),pp(1),0,pp(3)/sqrt(pp(5)),pp(3)/sqrt(pp(5)), [], [], 'r--');
-h = drawellipse(pp(2),pp(1),0,2*pp(3)/sqrt(pp(5)),2*pp(3)/sqrt(pp(5)), [], [], 'r--');
+drawellipse(pp(2),pp(1),0,pp(3),pp(3), [], [], 'r-');
+drawellipse(pp(2),pp(1),0,2*pp(3),2*pp(3), [], [], 'c--');
+%% notice that the results are consistent with the definition of PRF size as S/sqrt(N)
+%%
+% visualize the results
+figure;
+mx = max(resp(:));
+imagesc(resp,[0 mx]);
+axis image tight;
+colormap(gray);
+title('Predicted response to point stimuli');
+pp = resultsCSS.params;
+drawellipse(pp(2),pp(1),0,pp(3)/sqrt(pp(5)),pp(3)/sqrt(pp(5)), [], [], 'r-');
+drawellipse(pp(2),pp(1),0,2*pp(3)/sqrt(pp(5)),2*pp(3)/sqrt(pp(5)), [], [], 'c--');

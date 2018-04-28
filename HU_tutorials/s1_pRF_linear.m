@@ -1,26 +1,20 @@
-%% Example script illustrating how to fit a linear pRF model, given 
-% stimulus apertures and voxel response amplitudes (beta weights) per
-% stimulus
-%
+%% s1_pRF_linearLive
+%% Example script illustrating how to fit a linear pRF model, given stimulus apertures and voxel response amplitudes (beta weights) per stimulus
+
 %. For background information, see README file or 
 %   http://kendrickkay.net/socmodel/
-
-
 %% Add code to the MATLAB path
-
-addpath(genpath(fullfile(pwd,'code')));
-
+%%
+clear; close all; setup;
 %% Load data
-
+%%
 % load data from the first dataset
 load('dataset01.mat','betamn','betase');
-
 %% Load stimuli
-
+%%
 load('stimuli.mat','conimages', 'images');
-
 %% Perform stimulus pre-processing
-
+%%
 % extract the stimuli we need and then concatenate along the third dimension
 stimulus = conimages(1:69);
 stimulus = cat(3,stimulus{:});
@@ -61,12 +55,10 @@ for ii = 1:69
     colormap(gray);
 end
 %%
-
 % reshape stimuli into a "flattened" format: 69 stimuli x 100*100 positions
 stimulus = reshape(stimulus,100*100,69)';
-
 %% Prepare for model fitting
-
+%%
 % to perform model fitting, we will be using fitnonlinearmodel.m.  this function
 % is essentially a wrapper around MATLAB's lsqcurvefit.m function.  the benefit
 % of fitnonlinearmodel.m is that it simplifies input and output issues, deals with
@@ -143,38 +135,34 @@ opt = struct( ...
 
 % do a quick inspection of opt
 opt
-%%
-
+%% 
+% 
 %% Fit the model
-
-results = fitnonlinearmodel(opt);
 %%
-
+results = fitnonlinearmodel(opt);
+%% 
+% 
 %% Inspect the results
-
-% these are the final parameter estimates
+%%
+% these are the final parameter estimates (row, column, standard deviation, gain)
 results.params
 %%
-
 % this is the R^2 between the model fit and the data
 results.trainperformance
 %%
-
 % visualize the parameter estimates
 figure; hold on;
 pp = results.params;
-  % draw a circle indicating the PRF location +/- 2 PRF sizes.
-  
+
+% draw a circle indicating the PRF location +/- 2 PRF sizes
 drawellipse(pp(2),pp(1),0,2*pp(3),2*pp(3));
 drawrectangle((1+res)/2,(1+res)/2,res,res,'k-');
+plot([0 101], [50.5 50.5], 'k--', [50.5 50.5],[0 101],  'k--')
 axis([.5 res+.5 .5 res+.5]);
 set(gca,'YDir','reverse');
 axis square;
 title('Estimated PRF location and size');
-
-
 %%
-
 % visualize the data and the model fit
 figure; setfigurepos([100 100 450 250]); hold on;
 bar(betamn(ix,:),1);
@@ -186,17 +174,18 @@ axis([0 70 ax(3:4)]);
 xlabel('Stimulus number');
 ylabel('BOLD signal (% change)');
 title('Data and model fit');
-
 %% Check the predictions for alternate models
+%% Suppose we shifted the pRF center by reflecting it over the y-axis
+%%
 
-% Suppose we shifted the pRF center by reflecting it over the y-axis
 altparams = results.params;
 altparams(2) = res+1 - altparams(2);
 modelfit2 = modelfun(altparams,stimulus);
 gainadjustmnet = max(modelfit) / max(modelfit2);
 plot(1:69,modelfit2*gainadjustmnet,'k-','LineWidth',2);
 
-% Suppose we scaled the eccentricity
+%% Suppose we scaled the eccentricity
+%%
 altparams = results.params;
 altparams(1) = 3*(altparams(1) - (res+1)/2) + (res+1)/2;
 altparams(2) = 2*(altparams(2) - (res+1)/2) + (res+1)/2;
@@ -205,34 +194,36 @@ modelfit2 = modelfun(altparams,stimulus);
 gainadjustmnet = max(modelfit) / max(modelfit2);
 plot(1:69,modelfit2*gainadjustmnet,'c-','LineWidth',2);
 
-% Suppose we scaled the pRF size
+%% Suppose we scaled the pRF size
+%%
 altparams = results.params;
 altparams(3) = altparams(3)*3;
 
 modelfit2 = modelfun(altparams,stimulus);
 gainadjustmnet = max(modelfit) / max(modelfit2);
 plot(1:69,modelfit2*gainadjustmnet,'m-','LineWidth',2);
-
-
 %% Try a different resampling scheme: cross-validation
-
+%%
 % define an options struct that specifies leave-one-out cross-validation
 optXVAL = opt;
 optXVAL.resampling = -2*(eye(69) - 0.5);
 optXVAL.optimoptions = {'Display' 'off'};  % turn off reporting
 
+% Visualize the training & test conditions
+figure; 
+imagesc(optXVAL.resampling); axis image;
+
 % fit the model
 resultsXVAL = fitnonlinearmodel(optXVAL);
 %%
-
 % this is the R^2 between the model predictions and the data.
 % notice that this cross-validated R^2 is lower than the
 % R^2 of the full fit obtained previously.
 resultsXVAL.aggregatedtestperformance
-%%
-
+%% 
+% 
 %% Try a different resampling scheme: bootstrapping
-
+%%
 % define an options struct that specifies 50 bootstraps (i.e. draw 
 % with replacement from the 69 data points)
 optBOOT = opt;
@@ -242,7 +233,6 @@ optBOOT.optimoptions = {'Display' 'off'};  % turn off reporting
 % fit the model
 resultsBOOT = fitnonlinearmodel(optBOOT);
 %%
-
 % visualize the parameter estimates
 figure; hold on;
 for p=1:size(resultsBOOT.params,1)
@@ -252,11 +242,12 @@ for p=1:size(resultsBOOT.params,1)
 end
 drawrectangle((1+res)/2,(1+res)/2,res,res,'k-');
 axis([.5 res+.5 .5 res+.5]);
+plot([.5 res+.5], (res+1)/2*[1 1], 'k--', (res+1)/2*[1 1], [.5 res+.5] , 'k--')
 set(gca,'YDir','reverse');
 axis square;
 title('Bootstrap results');
-
-%% Convert  solutions to visual field coordinates
+%% Convert solutions to visual field coordinates
+%%
 [polarangle, ecc] = cart2pol(resultsBOOT.params(:,2) - seed(1), resultsBOOT.params(:,1) - seed(1));
 ecc = ecc / 50.5 * 15;
 sigma = resultsBOOT.params(:,3) / 50.5 * 15; 
@@ -275,10 +266,8 @@ subplot(1,3,3)
 histogram(sigma)
 title('PRF Size')
 xlim([0 5])
-
-
 %% Example of how to simulate model responses
-
+%%
 % let's take the model fitted to the full dataset and compute
 % the predicted response of the model to some new stimuli.
 
@@ -305,10 +294,7 @@ title('Predicted response to point stimuli');
 
 hold on
 pp = results.params;
-h = drawellipse(pp(2),pp(1),0,pp(3),pp(3));
-h = drawellipse(pp(2),pp(1),0,2*pp(3),2*pp(3), [], [], '--');
+drawellipse(pp(2),pp(1),0,pp(3),pp(3));
+drawellipse(pp(2),pp(1),0,2*pp(3),2*pp(3), [], [], '--');
 
 % notice that the results return the pRF.
-
-
-
