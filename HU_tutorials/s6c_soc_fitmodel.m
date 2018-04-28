@@ -1,25 +1,21 @@
 %% Example script illustrating how to fit the SOC model
-
 %% Note
 
 % This script assumes familiarity with the script that 
 % illustrates how to fit the CSS model (cssmodel_example.m).
-
 %% Add code to the MATLAB path
-
+%%
 savepath = fullfile(ap_root_path, 'HU_tutorials');
 setup
 %% Load data
-
+%%
 % load data from the third dataset
 load('dataset03.mat','betamn','betase');
-
 %% Load stimuli
-
+%%
 load('stimuli.mat','images');
-
 %% Perform stimulus pre-processing (Part 1)
-
+%%
 % extract the stimuli we need and then concatenate along the third dimension.
 % (note that we fit only the first 99 (out of 156) stimuli;
 % this corresponds to what was done in the paper.)
@@ -57,10 +53,10 @@ caxis([-.5 .5]);
 colormap(gray);
 colorbar;
 title('Stimulus');
-%%
-
+%% 
+% 
 %% Perform stimulus pre-processing (Part 2)
-
+%%
 % thus far, we have performed very basic pre-processing of the stimulus.  now,
 % we will proceed to perform more specialized operations that can be considered
 % to be a more integral part of the SOC model.  the reason that we consider these
@@ -91,17 +87,24 @@ else
         37.5*(180/150),-1,1,8,2,.01,2,0);
     save(fullfile(savepath, 'stimulusFiltered.mat'), 'stimulusFiltered')
 end
-
-
-
+%% Energy computation
 %%
-
 % compute the square root of the sum of the squares of the outputs of 
 % quadrature-phase filter pairs (this is the standard complex-cell energy model).
 % after this step, stimulus is images x orientations*positions.
 stimulusEnergy = sqrt(blob(stimulusFiltered.^2,2,2));
 
-% compute the population term in the divisive-normalization equation.  
+% Check an exmaple
+s = reshape(stimulusEnergy, [891 8 90 90]);
+a = squeeze(s(100,1,:,:));
+figure, imagesc(stimulus(:,:,100)); axis image; colormap gray;
+figure,  for ii = 1:8; subplot(2,4,ii); a = squeeze(s(100,ii,:,:)); imagesc(a); axis image; colormap gray; end
+clear s a;
+
+%% Divisive normalization
+%%
+% compute the population term in the divisive-normalization equation.
+
 % this term is simply the average across the complex-cell outputs 
 % at each position (averaging across orientation).
 stimulusPOP = blob(stimulusEnergy,2,8)/8;
@@ -143,12 +146,10 @@ colormap(gray);
 colorbar;
 title('Stimulus');
 %%
-
 % notice that the stimulus is now a "contrast image" where each value indicates
 % the amount of local contrast at a particular location in the stimulus.
-
 %% Prepare for model fitting
-
+%%
 % to prepare for the call to fitnonlinearmodel.m, we have to define various 
 % input parameters.  this is what we will now do.
 
@@ -253,23 +254,21 @@ opt = struct( ...
 
 % do a quick inspection of opt
 opt
-%%
-
+%% 
+% 
 %% Fit the model
-
-results = fitnonlinearmodel(opt);
 %%
-
+results = fitnonlinearmodel(opt);
+%% 
+% 
 %% Inspect the results
-
+%%
 % these are the final parameter estimates
 results.params
 %%
-
 % this is the R^2 between the model fit and the data
 results.trainperformance
 %%
-
 % visualize the data and the model fit
 figure; setfigurepos([100 100 450 250]); hold on;
 bar(betamn(ix,1:99),1);
@@ -284,4 +283,5 @@ axis([0 100 ax(3:4)]);
 xlabel('Stimulus number');
 ylabel('BOLD signal (% change)');
 title('Data and model fit');
-%%
+%% 
+%
