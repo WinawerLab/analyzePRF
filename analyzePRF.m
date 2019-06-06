@@ -1,47 +1,73 @@
 function results = analyzePRF(stimulus,data,tr,options)
-
-% function results = analyzePRF(stimulus,data,tr,options)
+% The Winawer Lab code for estimating pRF parameters (analyzePRF)
 %
+% Syntax:
+%  results = analyzePRF(stimulus,data,tr,options)
+%
+% Brief description:
+%    This comments are reformatted so an old person can read them
+%    (less crowded).  A few comments added in the code, but not
+%    changes to the code
+%
+% Inputs:
 % <stimulus> provides the apertures as a cell vector of R x C x time.
 %   values should be in [0,1].  the number of time points can differ across runs.
+%
 % <data> provides the data as a cell vector of voxels x time.  can also be
 %   X x Y x Z x time.  the number of time points should match the number of 
 %   time points in <stimulus>.
+%
 % <tr> is the TR in seconds (e.g. 1.5)
-% <options> (optional) is a struct with the following fields:
-%   <vxs> (optional) is a vector of voxel indices to analyze.  (we automatically
-%     sort the voxel indices and ensure uniqueness.)  default is 1:V where 
-%     V is total number of voxels.  to reduce computational time, you may want 
-%     to create a binary brain mask, perform find() on it, and use the result as <vxs>.
-%   <wantglmdenoise> (optional) is whether to use GLMdenoise to determine
-%     nuisance regressors to add into the PRF model.  note that in order to use
-%     this feature, there must be at least two runs (and conditions must repeat
-%     across runs).  we automatically determine the GLM design matrix based on
-%     the contents of <stimulus>.  special case is to pass in the noise regressors 
-%     directly (e.g. from a previous call).  default: 0.
+%
+% <options> (optional) is a struct with the following optional fields:
+%
+%   <vxs> - a vector of voxel indices to analyze.  (we automatically
+%     sort the voxel indices and ensure uniqueness.)  default is 1:V
+%     where V is total number of voxels.  to reduce computational
+%     time, you may want to create a binary brain mask, perform find()
+%     on it, and use the result as <vxs>.
+%
+%   <wantglmdenoise> - a logical that defines whether to use GLMdenoise to determine
+%     nuisance regressors to add into the PRF model.  note that in
+%     order to use this feature, there must be at least two runs (and
+%     conditions must repeat across runs).  we automatically determine
+%     the GLM design matrix based on the contents of <stimulus>.
+%     special case is to pass in the noise regressors directly (e.g.
+%     from a previous call).  default: 0.
+%
 %   <hrf> (optional) is a column vector with the hemodynamic response function (HRF)
-%     to use in the model.  the first value of <hrf> should be coincident with the onset
-%     of the stimulus, and the HRF should indicate the timecourse of the response to
-%     a stimulus that lasts for one TR.  default is to use a canonical HRF (calculated
-%     using getcanonicalhrf(tr,tr)').
+%     to use in the model.  the first value of <hrf> should be
+%     coincident with the onset of the stimulus, and the HRF should
+%     indicate the timecourse of the response to a stimulus that lasts
+%     for one TR.  default is to use a canonical HRF (calculated using
+%     getcanonicalhrf(tr,tr)').
+%
 %   <maxpolydeg> (optional) is a non-negative integer indicating the maximum polynomial
-%     degree to use for drift terms.  can be a vector whose length matches the number
-%     of runs in <data>.  default is to use round(L/2) where L is the number of minutes
-%     in the duration of a given run.
+%     degree to use for drift terms.  can be a vector whose length
+%     matches the number of runs in <data>.  default is to use
+%     round(L/2) where L is the number of minutes in the duration of a
+%     given run.
+%
 %   <seedmode> (optional) is a vector consisting of one or more of the
 %     following values (we automatically sort and ensure uniqueness):
+%
 %       0 means use generic large PRF seed
 %       1 means use generic small PRF seed
 %       2 means use best seed based on super-grid
-%     default: [0 1 2].  a special case is to pass <seedmode> as -2.  this causes the
-%     best seed based on the super-grid to be returned as the final estimate, thereby
-%     bypassing the computationally expensive optimization procedure.  further notes
-%     on this case are given below.
+%
+%     default: [0 1 2].  a special case is to pass <seedmode> as -2.
+%     this causes the best seed based on the super-grid to be returned
+%     as the final estimate, thereby bypassing the computationally
+%     expensive optimization procedure.  further notes on this case
+%     are given below.
+%
 %   <xvalmode> (optional) is
+%
 %     0 means just fit all the data
 %     1 means two-fold cross-validation (first half of runs; second half of runs)
 %     2 means two-fold cross-validation (first half of each run; second half of each run)
 %     default: 0.  (note that we round when halving.)
+%
 %   <numperjob> (optional) is
 %     [] means to run locally (not on the cluster)
 %     N where N is a positive integer indicating the number of voxels to analyze in each 
@@ -52,67 +78,90 @@ function results = analyzePRF(stimulus,data,tr,options)
 %   <typicalgain> (optional) is a typical value for the gain in each time-series.
 %     default: 10.
 %
-% Analyze pRF data and return the results.
+% Outputs:  Analyze pRF data and returns the results structure that
+% contains the following fields:
 %
-% The results structure contains the following fields:
 % <ang> contains pRF angle estimates.  Values range between 0 and 360 degrees.
 %   0 corresponds to the right horizontal meridian, 90 corresponds to the upper vertical
 %   meridian, and so on.
+%
 % <ecc> contains pRF eccentricity estimates.  Values are in pixel units with a lower
 %   bound of 0 pixels.
+%
 % <rfsize> contains pRF size estimates.  pRF size is defined as sigma/sqrt(n) where
 %   sigma is the standard of the 2D Gaussian and n is the exponent of the power-law
 %   function.  Values are in pixel units with a lower bound of 0 pixels.
+%
 % <expt> contains pRF exponent estimates.
+%
 % <gain> contains pRF gain estimates.  Values are in the same units of the data
 %   and are constrained to be non-negative.
+%
 % <R2> contains R^2 values that indicate the goodness-of-fit of the model to the data.
-%   Values are in percentages and generally range between 0% and 100%.  The R^2 values
-%   are computed after projecting out polynomials from both the data and the model fit.
-%   (Because of this projection, R^2 values can sometimes drop below 0%.)  Note that
-%   if cross-validation is used (see <xvalmode>), the interpretation of <R2> changes
-%   accordingly.
+%   Values are in percentages and generally range between 0% and 100%.
+%   The R^2 values are computed after projecting out polynomials from
+%   both the data and the model fit. (Because of this projection, R^2
+%   values can sometimes drop below 0%.)  Note that if
+%   cross-validation is used (see <xvalmode>), the interpretation of
+%   <R2> changes accordingly.
+%
 % <resnorms> and <numiters> contain optimization details (residual norms and 
 %   number of iterations, respectively).
-% <meanvol> contains the mean volume, that is, the mean of each voxel's time-series.
-% <noisereg> contains a record of the noise regressors used in the model.
-% <params> contains a record of the raw parameter estimates that are obtained internally
-%   in the code.  These raw parameters are transformed to a more palatable format for
-%   the user (as described above).
-% <options> contains a record of the options used in the call to analyzePRF.m.
+%
+% <meanvol> contains the mean volume, that is, the mean of each
+% voxel's time-series.
+%
+% <noisereg> contains a record of the noise regressors used in the
+% model.
+%
+% <params> contains a record of the raw parameter estimates that are
+%   obtained internally in the code.  These raw parameters are
+%   transformed to a more palatable format for the user (as described
+%   above).
+%
+% <options> contains a record of the options used in the call to
+%   analyzePRF.m.
 %
 % Details on the pRF model:
-% - Before analysis, we zero out any voxel that has a non-finite value or has all zeros
-%   in at least one of the runs.  This prevents weird issues due to missing or bad data.
-% - The pRF model that is fit is similar to that described in Dumoulin and Wandell (2008),
-%   except that a static power-law nonlinearity is added to the model.  This new model, 
-%   called the Compressive Spatial Summation (CSS) model, is described in Kay, Winawer, 
-%   Mezer, & Wandell (2013).
-% - The model involves computing the dot-product between the stimulus and a 2D isotropic
-%   Gaussian, raising the result to an exponent, scaling the result by a gain factor,
-%   and then convolving the result with a hemodynamic response function (HRF).  Polynomial
-%   terms are included (on a run-by-run basis) to model the baseline signal level.
-% - The 2D isotropic Gaussian is scaled such that the summation of the values in the
-%   Gaussian is equal to one.  This eases the interpretation of the gain of the model.
-% - The exponent parameter in the model is constrained to be non-negative.
-% - The gain factor in the model is constrained to be non-negative; this aids the 
-%   interpretation of the model (e.g. helps avoid voxels with negative BOLD responses
-%   to the stimuli).
-% - The workhorse of the analysis is fitnonlinearmodel.m, which is essentially a wrapper 
-%   around routines in the MATLAB Optimization Toolbox.  We use the Levenberg-Marquardt 
-%   algorithm for optimization, minimizing squared error between the model and the data.
-% - A two-stage optimization strategy is used whereby all parameters excluding the
-%   exponent parameter are first optimized (holding the exponent parameter fixed) and 
-%   then all parameters are optimized (including the exponent parameter).  This 
-%   strategy helps avoid local minima.
+%  - Before analysis, we zero out any voxel that has a non-finite value or has all zeros
+%    in at least one of the runs.  This prevents weird issues due to
+%    missing or bad data.
+%  - The pRF model that is fit is similar to that described in Dumoulin and Wandell (2008),
+%    except that a static power-law nonlinearity is added to the
+%    model.  This new model, called the Compressive Spatial Summation
+%    (CSS) model, is described in Kay, Winawer, Mezer, & Wandell
+%    (2013).
+%  - The model involves computing the dot-product between the stimulus and a 2D isotropic
+%    Gaussian, raising the result to an exponent, scaling the result
+%    by a gain factor, and then convolving the result with a
+%    hemodynamic response function (HRF).  Polynomial terms are
+%    included (on a run-by-run basis) to model the baseline signal
+%    level.
+%  - The 2D isotropic Gaussian is scaled such that the summation of the values in the
+%    Gaussian is equal to one.  This eases the interpretation of the
+%    gain of the model.
+%  - The exponent parameter in the model is constrained to be non-negative.
+%  - The gain factor in the model is constrained to be non-negative; this aids the 
+%    interpretation of the model (e.g. helps avoid voxels with
+%    negative BOLD responses to the stimuli).
+%  - The workhorse of the analysis is fitnonlinearmodel.m, which is essentially a wrapper 
+%    around routines in the MATLAB Optimization Toolbox.  We use the
+%    Levenberg-Marquardt algorithm for optimization, minimizing
+%    squared error between the model and the data.
+%  - A two-stage optimization strategy is used whereby all parameters
+%    excluding the exponent parameter are first optimized (holding the
+%    exponent parameter fixed) and then all parameters are optimized
+%    (including the exponent parameter).  This strategy helps avoid
+%    local minima.
 %
 % Regarding GLMdenoise:
-% - If the <wantglmdenoise> option is specified, we derive noise regressors using
-%   GLMdenoise prior to model fitting.  This is done by creating a GLM design matrix
-%   based on the contents of <stimulus> and then using this design matrix in conjunction
-%   with GLMdenoise to analyze the data.  The noise regressors identified by GLMdenoise
-%   are then used in the fitting of the pRF models (the regressors enter the model
-%   additively, just like the polynomial regressors).
+%  - If the <wantglmdenoise> option is specified, we derive noise regressors using
+%    GLMdenoise prior to model fitting.  This is done by creating a
+%    GLM design matrix based on the contents of <stimulus> and then
+%    using this design matrix in conjunction  with GLMdenoise to
+%    analyze the data.  The noise regressors identified by GLMdenoise
+%    are then used in the fitting of the pRF models (the regressors
+%    enter the model additively, just like the polynomial regressors).
 %
 % Regarding seeding issues:
 % - To minimize the impact of local minima, the default strategy is to perform full 
