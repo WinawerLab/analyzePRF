@@ -563,7 +563,7 @@ else
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% FIT MODEL
 
   %%%%% CLUSTER CASE
-
+ %{
   if usecluster
 
     % submit jobs
@@ -596,11 +596,12 @@ else
   %%%%% NON-CLUSTER CASE
 
   else
-
-    a1 = fitnonlinearmodel(opt);
-
+%}
+  % Outside of Wash U or Minnesota we don't use KNK's cluster
+  a1 = fitnonlinearmodel(opt);
+%{
   end
-
+%}
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PREPARE OUTPUT

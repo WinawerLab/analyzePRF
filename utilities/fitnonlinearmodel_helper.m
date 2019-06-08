@@ -247,3 +247,5 @@ end
 
 % report
 fprintf('  aggregatedtestperformance is %.2f.\n',results.aggregatedtestperformance);
+
+end

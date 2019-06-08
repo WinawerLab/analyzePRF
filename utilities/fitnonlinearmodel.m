@@ -621,8 +621,16 @@ end
 
 % loop over voxels
 clear results0;
-parfor p=1:vnum
 
+%
+% For debugging BW removed this parfor
+%
+% parfor p=1:vnum
+%
+% We could have if vnum > XX then use parfor, otherwise just the for
+%
+
+for p=1:vnum
   % report
   fprintf('*** fitnonlinearmodel: processing voxel %d (%d of %d). ***\n',vxs(p),p,vnum);
   vtime = clock;  % start time for current voxel
