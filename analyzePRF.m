@@ -306,7 +306,8 @@ usecluster = ~isempty(options.numperjob);
 for p=1:length(stimulus)
   stimulus{p} = squish(stimulus{p},2)';  % frames x pixels
   stimulus{p} = [stimulus{p} p*ones(size(stimulus{p},1),1)];  % add a dummy column to indicate run breaks
-  stimulus{p} = single(stimulus{p});  % make single to save memory
+  % Remove conversion to single, otherwise it throws a lsqcurvefit error (at least in MATLAB 2018b)
+  % stimulus{p} = single(stimulus{p});  % make single to save memory
 end
 
 % deal with data badness (set bad voxels to be always all 0)
