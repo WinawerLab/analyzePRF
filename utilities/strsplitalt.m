@@ -1,6 +1,6 @@
-function f = strsplit(str,pattern)
+function f = strsplitalt(str,pattern)
 
-% function f = strsplit(str,pattern)
+% function f = strsplitalt(str,pattern)
 %
 % <str> is a string
 % <pattern> (optional) is a string.  default: sprintf('\n').
@@ -9,8 +9,8 @@ function f = strsplit(str,pattern)
 % note that we generate beginning and ending fragments.
 %
 % example:
-% isequal(strsplit('test','e'),{'t' 'st'})
-% isequal(strsplit('test','t'),{'' 'es' ''})
+% isequal(strsplitalt('test','e'),{'t' 'st'})
+% isequal(strsplitalt('test','t'),{'' 'es' ''})
 
 % input
 if ~exist('pattern','var') || isempty(pattern)
