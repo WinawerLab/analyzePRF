@@ -314,7 +314,7 @@ model = {{[] [1-res(1)+1 1-res(2)+1 0    0   NaN;
                    2*res(1)-1 2*res(2)-1 Inf  Inf Inf] @(ss)modelfun}};
 
 %% Little effort to clarify the modelfun function. This is just a comment.
-%{
+
 % Inputs of the function
 %   pp = parameters matrix
 %   dd = data matrix
